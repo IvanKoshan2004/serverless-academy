@@ -1,0 +1,12 @@
+{
+    "name": "01_cli_interactive_sort",
+    "version": "1.0.0",
+    "description": "",
+    "main": "app.js",
+    "type": "module",
+    "scripts": {
+        "start": "node app.js"
+    },
+    "author": "",
+    "license": "ISC"
+}
