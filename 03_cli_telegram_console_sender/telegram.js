@@ -1,6 +1,6 @@
 import TelegramBot from "node-telegram-bot-api";
 
-function waitForUserStart(botToken) {
+export function waitForUserStart(botToken) {
     return new Promise((resolve, reject) => {
         const timeout = setTimeout(() => reject("timeout"), 60000);
         try {
@@ -22,7 +22,7 @@ function waitForUserStart(botToken) {
     });
 }
 
-async function sendMessage(userId, message, botToken) {
+export async function sendMessage(userId, message, botToken) {
     try {
         const bot = new TelegramBot(botToken);
         return await bot.sendMessage(userId, message);
@@ -31,7 +31,7 @@ async function sendMessage(userId, message, botToken) {
     }
 }
 
-async function sendPhoto(userId, readStream, botToken) {
+export async function sendPhoto(userId, readStream, botToken) {
     try {
         const bot = new TelegramBot(botToken);
         return await bot.sendPhoto(userId, readStream);
