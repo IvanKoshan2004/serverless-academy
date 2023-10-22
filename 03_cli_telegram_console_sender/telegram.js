@@ -1,13 +1,9 @@
 import TelegramBot from "node-telegram-bot-api";
 
 export async function getBotLink(botToken) {
-    try {
-        const bot = new TelegramBot(botToken);
-        const botData = await bot.getMe();
-        return `https://t.me/${botData.username}`;
-    } catch (err) {
-        console.log(err);
-    }
+    const bot = new TelegramBot(botToken);
+    const botData = await bot.getMe();
+    return `https://t.me/${botData.username}`;
 }
 
 export function waitForUserStart(botToken) {
@@ -17,7 +13,12 @@ export function waitForUserStart(botToken) {
             const bot = new TelegramBot(botToken, {
                 polling: true,
             });
-            bot.on("text", (message) => {
+            const botStartStamp = Date.now();
+            bot.on("message", async (message) => {
+                // Checking if the message is sent during this session
+                if (Date.now() - botStartStamp < 1000) {
+                    return;
+                }
                 if (message.text.startsWith("/start")) {
                     if (message.chat.id == message.from.id) {
                         clearTimeout(timeout);
@@ -32,20 +33,13 @@ export function waitForUserStart(botToken) {
     });
 }
 
-export async function sendMessage(userId, message, botToken) {
-    try {
-        const bot = new TelegramBot(botToken);
-        return await bot.sendMessage(userId, message);
-    } catch (err) {
-        console.log(err);
-    }
+export function sendMessage(userId, message, botToken) {
+    const bot = new TelegramBot(botToken);
+    return bot.sendMessage(userId, message);
 }
 
-export async function sendPhoto(userId, readStream, botToken) {
-    try {
-        const bot = new TelegramBot(botToken);
-        return await bot.sendPhoto(userId, readStream);
-    } catch (err) {
-        console.log(err);
-    }
+export function sendPhoto(userId, readStream, botToken) {
+    process.env.NTBA_FIX_350 = true; // deprecation message fix
+    const bot = new TelegramBot(botToken);
+    return bot.sendPhoto(userId, readStream);
 }
