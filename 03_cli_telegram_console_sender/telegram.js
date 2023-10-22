@@ -1,5 +1,15 @@
 import TelegramBot from "node-telegram-bot-api";
 
+export async function getBotLink(botToken) {
+    try {
+        const bot = new TelegramBot(botToken);
+        const botData = await bot.getMe();
+        return `https://t.me/${botData.username}`;
+    } catch (err) {
+        console.log(err);
+    }
+}
+
 export function waitForUserStart(botToken) {
     return new Promise((resolve, reject) => {
         const timeout = setTimeout(() => reject("timeout"), 60000);
