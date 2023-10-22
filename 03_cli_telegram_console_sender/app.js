@@ -1,18 +1,18 @@
 import { program } from "commander";
-import { readFileSync, writeFileSync } from "fs";
+import { createReadStream, readFileSync, writeFileSync } from "fs";
 import { createRequire } from "module";
+import {
+    getBotLink,
+    sendMessage,
+    sendPhoto,
+    waitForUserStart,
+} from "./telegram.js";
 const require = createRequire(import.meta.url);
 const packageInfo = require("./package.json");
-program
-    .version(packageInfo.version, "-v, --version")
-    .name("telegram-console-sender")
-    .description(
-        "CLI tool for saving messages and photos through Telegram bot"
-    );
+const botTokenPath = new URL(`./bot_token.txt`, import.meta.url);
+const userIdPath = new URL(`./user_id.txt`, import.meta.url);
 
 async function readConfig() {
-    const botTokenPath = new URL(`./bot_token.txt`, import.meta.url);
-    const userIdPath = new URL(`./user_id.txt`, import.meta.url);
     let botToken, userId;
     try {
         botToken = readFileSync(botTokenPath, "utf-8");
@@ -26,31 +26,93 @@ async function readConfig() {
         process.exit(1);
     }
     try {
-        userId = readFileSync(userIdPath, "utf-8");
+        userId = parseInt(readFileSync(userIdPath, "utf-8"));
     } catch (e) {
         writeFileSync(userIdPath, "");
+        userId = null;
     }
-    userId = null;
     return [botToken, userId];
 }
 
 async function startAction() {
     const [botToken, userId] = await readConfig();
+    let link;
+    try {
+        link = await getBotLink(botToken);
+    } catch (e) {
+        console.log(
+            "Can't access the bot. Check if the bot token is valid, and retry"
+        );
+        process.exit(1);
+    }
     console.log(
-        "Start the bot using link below.\nProcess will exit in 1 minute if no action is done or if error occurs"
+        `Configure the bot by sending \x1b[34m/start\x1b[0m message to bot at this link \x1b[34m${link}\x1b[0m\nProgram will stop in 1 minute if no action is done or sooner if error occurs`
     );
-    //To do
+    try {
+        const userId = await waitForUserStart(botToken);
+        writeFileSync(userIdPath, userId.toString());
+        console.log(
+            `Sucessfully registered the user with id ${userId}.\nYou can now use the app`
+        );
+        process.exit(0);
+    } catch (e) {
+        if (e == "timeout") {
+            console.log("No action done. Process exit");
+            process.exit(1);
+        }
+        console.log("Error has happened. ", e);
+        process.exit(1);
+    }
 }
 async function sendMessageAction(message) {
     const [botToken, userId] = await readConfig();
-    //To do
+    if (!userId) {
+        console.log(
+            "User id is not yet installed. Please run start command first"
+        );
+    }
+    try {
+        await sendMessage(userId, message, botToken);
+        console.log("Message sent");
+    } catch (e) {
+        console.log(
+            "Can't access the bot. Check if the bot token is valid, and retry"
+        );
+        process.exit(1);
+    }
 }
 async function sendPhotoAction(photoPath) {
     const [botToken, userId] = await readConfig();
-    //To do
+    if (!userId) {
+        console.log(
+            "User id is not yet installed. Please run start command first"
+        );
+    }
+    let rs;
+    try {
+        rs = createReadStream(photoPath);
+    } catch (e) {
+        console.log("Can't open the photo");
+    }
+    try {
+        console.log("Photo is sending");
+        await sendPhoto(userId, rs, botToken);
+        console.log("Photo sent");
+    } catch (e) {
+        console.log(
+            "Can't access the bot. Check if the bot token is valid, and retry"
+        );
+        process.exit(1);
+    }
 }
 
 async function main() {
+    program
+        .version(packageInfo.version, "-v, --version")
+        .name("telegram-console-sender")
+        .description(
+            "CLI tool for saving messages and photos through Telegram bot"
+        );
     program.command("start").description(`Start the bot.`).action(startAction);
     program
         .command("send-message")
