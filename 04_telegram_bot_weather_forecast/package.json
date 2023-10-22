@@ -1,0 +1,16 @@
+{
+    "name": "04_telegram_bot_weather_forecast",
+    "version": "1.0.0",
+    "description": "",
+    "main": "app.js",
+    "type": "module",
+    "scripts": {
+        "start": "node app.js"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "axios": "^1.5.1",
+        "node-telegram-bot-api": "^0.63.0"
+    }
+}
