@@ -2,8 +2,11 @@ import TelegramBot from "node-telegram-bot-api";
 import { config } from "./config.js";
 import axios from "axios";
 import { generateKeyboard } from "./helpers.js";
+import { ExchangeService } from "./exchange-service.js";
 
 const bot = new TelegramBot(config.botToken, { polling: true });
+const exchangeService = new ExchangeService(config.monobankApiKey);
+
 const currencyButtons = [
     { name: "USD", row: 0, pos: 0 },
     { name: "EUR", row: 0, pos: 1 },
@@ -27,9 +30,18 @@ function promptCurrency(chatId) {
     });
 }
 
-function sendCurrencyExchangeRate(chatId, currency) {
-    //To do
-    return bot.sendMessage(chatId, "To do");
+async function sendCurrencyExchangeRate(chatId, currency) {
+    try {
+        const exchangeData = await exchangeService.getExchangeData(
+            currency,
+            "UAH"
+        );
+        console.log("Exchange data", exchangeData);
+        return bot.sendMessage(chatId, "To do");
+    } catch (e) {
+        console.log(e);
+        return bot.sendMessage(chatId, "Bot cannot process your request");
+    }
 }
 
 bot.setMyCommands([{ command: "start", description: "starts the bot" }]);
@@ -42,6 +54,7 @@ bot.on("message", async (message) => {
     }
     if (currencyButtons.find((el) => el.name == message.text)) {
         const currency = currencyButtons.find((el) => el.name == message.text);
-        sendCurrencyExchangeRate(message.chat.id, currency);
+        sendCurrencyExchangeRate(message.chat.id, currency.name);
     }
 });
+console.log("Bot started");
