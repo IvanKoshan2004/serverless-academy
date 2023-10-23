@@ -1,0 +1,15 @@
+{
+    "name": "05_telegram_bot_exchange_rates",
+    "version": "1.0.0",
+    "description": "",
+    "main": "app.js",
+    "scripts": {
+        "start": "node app.js"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "axios": "^1.5.1",
+        "node-telegram-bot-api": "^0.63.0"
+    }
+}
