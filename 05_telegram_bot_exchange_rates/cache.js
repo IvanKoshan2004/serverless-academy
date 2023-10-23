@@ -1,7 +1,10 @@
 export class Cache {
     constructor(options = { wipeInterval: 270 }) {
         this._map = new Map();
-        setInterval(this.wipeExpiredCache, options.wipeInterval * 1000);
+        setInterval(
+            this.wipeExpiredCache.bind(this),
+            options.wipeInterval * 1000
+        );
     }
 
     get(key) {
