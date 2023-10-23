@@ -32,18 +32,32 @@ function promptCurrency(chatId) {
 
 async function sendCurrencyExchangeRate(chatId, currency) {
     try {
+        const dataMessage = await bot.sendMessage(
+            chatId,
+            "Looking up the data..."
+        );
         const exchangeData = await exchangeService.getExchangeData(
             currency,
             "UAH"
         );
-        console.log("Exchange data", exchangeData);
-        return bot.sendMessage(chatId, "To do");
+        const responseMessage = `
+Pair ${exchangeData.key}
+
+Buy: ${exchangeData.rateBuy} UAH
+Sell: ${exchangeData.rateSell} UAH
+
+Last update at ${new Date(exchangeData.date * 1000).toUTCString()}
+`;
+        return bot.editMessageText(responseMessage, {
+            chat_id: chatId,
+            message_id: await dataMessage.message_id,
+            parse_mode: "Markdown",
+        });
     } catch (e) {
         console.log(e);
         return bot.sendMessage(chatId, "Bot cannot process your request");
     }
 }
-
 bot.setMyCommands([{ command: "start", description: "starts the bot" }]);
 bot.on("message", async (message) => {
     if (message.text.startsWith("/start")) {
