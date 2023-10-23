@@ -50,7 +50,7 @@ Last update at ${new Date(exchangeData.date * 1000).toUTCString()}
 `;
         return bot.editMessageText(responseMessage, {
             chat_id: chatId,
-            message_id: await dataMessage.message_id,
+            message_id: dataMessage.message_id,
             parse_mode: "Markdown",
         });
     } catch (e) {
