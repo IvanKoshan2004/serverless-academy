@@ -20,10 +20,10 @@ export class ExchangeService {
     constructor(monobankApiKey) {
         this.monobankApiKey = monobankApiKey;
         this.cache = new Cache();
-        this.asyncLock = new AsyncLock(["apiCallLock"]);
+        this.asyncLock = new AsyncLock(["cacheUpdateApiCall"]);
     }
     async getExchangeData(currencyA, currencyB) {
-        await this.asyncLock.getLock("apiCallLock");
+        await this.asyncLock.getLock("cacheUpdateApiCall");
         const key = ExchangeService._createKey(currencyA, currencyB);
         const exchangeData = this.cache.get(key);
         if (exchangeData) {
@@ -35,26 +35,25 @@ export class ExchangeService {
                 throw Error("Unavailable currency pair");
             }
         }
-        if (this.asyncLock.isLocked("apiCallLock")) {
-            return this.getExchangeData(currencyA, currencyB);
+        if (!this.asyncLock.isLocked("cacheUpdateApiCall")) {
+            this.asyncLock.lock(
+                "cacheUpdateApiCall",
+                this._updateCache.bind(this)
+            );
         }
-        return this.asyncLock.lock(
-            "apiCallLock",
-            (async () => {
-                const fetchedData = await this._fetchMonobankExchangeRates();
-                const availablePairs =
-                    ExchangeService._processApiResponse(fetchedData);
-                const availableKeys = [];
-                for (const pair of availablePairs) {
-                    this.cache.set(pair.key, pair, { ttls: 60 });
-                    availableKeys.push(pair.key);
-                }
-                this.cache.set("availableKeys", availableKeys, {
-                    ttls: 3600,
-                });
-                return this.cache.get(key);
-            }).bind(this)
-        );
+        return this.getExchangeData(currencyA, currencyB);
+    }
+    async _updateCache() {
+        const fetchedData = await this._fetchMonobankExchangeRates();
+        const availablePairs = ExchangeService._processApiResponse(fetchedData);
+        const availableKeys = [];
+        for (const pair of availablePairs) {
+            this.cache.set(pair.key, pair, { ttls: 60 });
+            availableKeys.push(pair.key);
+        }
+        this.cache.set("availableKeys", availableKeys, {
+            ttls: 3600,
+        });
     }
     async _fetchMonobankExchangeRates() {
         const request = await axios("https://api.monobank.ua/bank/currency", {
