@@ -1,6 +1,5 @@
 import TelegramBot from "node-telegram-bot-api";
 import { config } from "./config.js";
-import axios from "axios";
 import { generateKeyboard } from "./helpers.js";
 import { ExchangeService } from "./exchange-service.js";
 
@@ -54,7 +53,6 @@ Last update at ${new Date(exchangeData.date * 1000).toUTCString()}
             parse_mode: "Markdown",
         });
     } catch (e) {
-        console.log(e);
         return bot.sendMessage(chatId, "Bot cannot process your request");
     }
 }
