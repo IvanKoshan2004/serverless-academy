@@ -6,15 +6,17 @@ export class AsyncLock {
         }
         console.log;
     }
-    lock(name, callback, callbackArgs = []) {
+    lock(name, callback, errCallback, callbackArgs = []) {
         if (typeof callback != "function") {
             throw Error("callback should be a function");
         }
-        const lock = new Promise((resolve, reject) => {
+        const lock = new Promise(async (resolve, reject) => {
             try {
-                resolve(callback(...callbackArgs));
+                const result = await callback(...callbackArgs);
+                resolve(result);
             } catch (e) {
-                reject();
+                errCallback(e);
+                reject(e);
             }
         });
         this._promiseMaps.set(name, lock);
