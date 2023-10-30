@@ -19,45 +19,56 @@ export class MonobankExchangeService {
     constructor(monobankApiKey) {
         this.monobankApiKey = monobankApiKey;
         this.cache = new Cache();
-        this._updateCache();
-        this._cacheUpdateInterval = setInterval(
-            this._updateCache.bind(this),
-            60000
-        );
+        this._cacheUpdatePromise = null;
+        this._lastCacheUpdateTime = 0;
     }
     async getExchangeData(currencyA, currencyB) {
-        const key = MonobankExchangeService._createKey(currencyA, currencyB);
-        const exchangeData = this.cache.get(key);
-        if (exchangeData) {
-            return exchangeData;
+        try {
+            await this._cacheUpdatePromise;
+        } catch (e) {
+            if ((e.response.status = 429)) {
+                if (!this._cacheUpdateTooManyRequests) {
+                    this._cacheUpdateTooManyRequests = true;
+                    this._cacheUpdatePromise = new Promise((resolve) => {
+                        setTimeout(() => {
+                            this._cacheUpdateTooManyRequests = false;
+                            resolve();
+                        }, 60000);
+                    });
+                }
+                return this.getExchangeData(currencyA, currencyB);
+            } else {
+                throw e;
+            }
         }
+        const key = MonobankExchangeService._createKey(currencyA, currencyB);
         const availableKeysCache = this.cache.get("availableKeys");
         if (availableKeysCache) {
             if (availableKeysCache.indexOf(key) == -1) {
                 throw Error("Unavailable currency pair");
             }
+            const exchangeData = this.cache.get(key);
+            if (exchangeData) {
+                return exchangeData;
+            }
         }
-        await new Promise((resolve) => setTimeout(resolve, 1000)); // wait a second before trying to look again
+        this._cacheUpdatePromise = this._updateCache();
         return this.getExchangeData(currencyA, currencyB);
     }
     async _updateCache() {
-        try {
-            const fetchedData = await this._fetchMonobankExchangeRates();
-            const availablePairs =
-                MonobankExchangeService._processApiResponse(fetchedData);
-            const availableKeys = [];
-            for (const pair of availablePairs) {
-                this.cache.set(pair.key, pair, { ttls: 60 });
-                availableKeys.push(pair.key);
-            }
-            this.cache.set("availableKeys", availableKeys, {
-                ttls: 3600,
-            });
-        } catch (e) {
-            if ((e.response.status = 429)) {
-                console.log("Too many api requests");
-            }
+        const fetchedData = await this._fetchMonobankExchangeRates();
+        const availablePairs =
+            MonobankExchangeService._processApiResponse(fetchedData);
+        const availableKeys = [];
+        for (const pair of availablePairs) {
+            this.cache.set(pair.key, pair, { ttls: 60 });
+            availableKeys.push(pair.key);
         }
+        this.cache.set("availableKeys", availableKeys, {
+            ttls: 3600,
+        });
+        this._cacheUpdatePromise = null;
+        this._lastCacheUpdateTime = Date.now();
     }
     async _fetchMonobankExchangeRates() {
         const request = await axios("https://api.monobank.ua/bank/currency", {
