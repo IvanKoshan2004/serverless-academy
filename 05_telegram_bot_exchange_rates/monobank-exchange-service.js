@@ -1,7 +1,7 @@
 import axios from "axios";
 import { Cache } from "./cache.js";
 
-export class ExchangeService {
+export class MonobankExchangeService {
     static iso4217CurrencyCodes = [
         {
             code: 980,
@@ -26,7 +26,7 @@ export class ExchangeService {
         );
     }
     async getExchangeData(currencyA, currencyB) {
-        const key = ExchangeService._createKey(currencyA, currencyB);
+        const key = MonobankExchangeService._createKey(currencyA, currencyB);
         const exchangeData = this.cache.get(key);
         if (exchangeData) {
             return exchangeData;
@@ -44,7 +44,7 @@ export class ExchangeService {
         try {
             const fetchedData = await this._fetchMonobankExchangeRates();
             const availablePairs =
-                ExchangeService._processApiResponse(fetchedData);
+                MonobankExchangeService._processApiResponse(fetchedData);
             const availableKeys = [];
             for (const pair of availablePairs) {
                 this.cache.set(pair.key, pair, { ttls: 60 });
@@ -69,7 +69,7 @@ export class ExchangeService {
         return request.data;
     }
     static _processApiResponse(exchangePairs) {
-        const availableCodes = ExchangeService.iso4217CurrencyCodes.map(
+        const availableCodes = MonobankExchangeService.iso4217CurrencyCodes.map(
             (el) => el.code
         );
         const availablePairs = [];
@@ -78,9 +78,13 @@ export class ExchangeService {
                 availableCodes.indexOf(pair.currencyCodeA) != -1 &&
                 availableCodes.indexOf(pair.currencyCodeB) != -1
             ) {
-                const key = ExchangeService._createKey(
-                    ExchangeService._getCurrencyFromCode(pair.currencyCodeA),
-                    ExchangeService._getCurrencyFromCode(pair.currencyCodeB)
+                const key = MonobankExchangeService._createKey(
+                    MonobankExchangeService._getCurrencyFromCode(
+                        pair.currencyCodeA
+                    ),
+                    MonobankExchangeService._getCurrencyFromCode(
+                        pair.currencyCodeB
+                    )
                 );
                 const pairExchangeObject = {
                     key: key,
@@ -98,7 +102,7 @@ export class ExchangeService {
         return currencyA + "/" + currencyB;
     }
     static _getCodeFromCurrency(currency) {
-        const codeCurrency = ExchangeService.iso4217CurrencyCodes.find(
+        const codeCurrency = MonobankExchangeService.iso4217CurrencyCodes.find(
             (el) => el.currency == currency
         );
         if (codeCurrency) {
@@ -107,7 +111,7 @@ export class ExchangeService {
         return null;
     }
     static _getCurrencyFromCode(code) {
-        const codeCurrency = ExchangeService.iso4217CurrencyCodes.find(
+        const codeCurrency = MonobankExchangeService.iso4217CurrencyCodes.find(
             (el) => el.code == code
         );
         if (codeCurrency) {

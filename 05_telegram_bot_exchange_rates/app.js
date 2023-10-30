@@ -1,10 +1,14 @@
 import TelegramBot from "node-telegram-bot-api";
 import { config } from "./config.js";
 import { generateKeyboard } from "./helpers.js";
-import { ExchangeService } from "./exchange-service.js";
+import { MonobankExchangeService } from "./monobank-exchange-service.js";
+import { PrivatBankExchangeService } from "./privatbank-exchange-service.js";
 
 const bot = new TelegramBot(config.botToken, { polling: true });
-const exchangeService = new ExchangeService(config.monobankApiKey);
+const monobankExchangeService = new MonobankExchangeService(
+    config.monobankApiKey
+);
+const privatBankExchangeService = new PrivatBankExchangeService();
 
 const currencyButtons = [
     { name: "USD", row: 0, pos: 0 },
@@ -35,17 +39,29 @@ async function sendCurrencyExchangeRate(chatId, currency) {
             chatId,
             "Looking up the data..."
         );
-        const exchangeData = await exchangeService.getExchangeData(
-            currency,
-            "UAH"
-        );
+        const monobankExchangeData =
+            await monobankExchangeService.getExchangeData(currency, "UAH");
+        const privatBankExchangeData =
+            await privatBankExchangeService.getExchangeData(currency, "UAH");
+
         const responseMessage = `
-Pair ${exchangeData.key}
+Monobank:
+Pair ${monobankExchangeData.key}
 
-Buy: ${exchangeData.rateBuy} UAH
-Sell: ${exchangeData.rateSell} UAH
+Buy: ${monobankExchangeData.rateBuy} UAH
+Sell: ${monobankExchangeData.rateSell} UAH
 
-Last update at ${new Date(exchangeData.date * 1000).toUTCString()}
+Last update at ${new Date(monobankExchangeData.date * 1000).toUTCString()}
+
+PrivatBank:
+Pair ${privatBankExchangeData.key}
+
+Buy: ${privatBankExchangeData.rateBuy} UAH
+Sell: ${privatBankExchangeData.rateSell} UAH
+
+Exchange rates loaded at ${new Date(
+            privatBankExchangeData.date * 1000
+        ).toUTCString()}
 `;
         return bot.editMessageText(responseMessage, {
             chat_id: chatId,
