@@ -51,7 +51,18 @@ function makeGetRequestWithRetries(endpoint, retryCount = 0) {
 }
 
 function findIsDoneProperty(json) {
-    return true;
+    if (typeof json["isDone"] == "boolean") {
+        return json["isDone"];
+    }
+    for (const key in json) {
+        if (typeof json[key] == "object") {
+            const nestedIsDone = findIsDoneProperty(json[key]);
+            if (nestedIsDone !== null) {
+                return nestedIsDone;
+            }
+        }
+    }
+    return null;
 }
 
 async function main() {
@@ -59,7 +70,7 @@ async function main() {
     let falseCount = 0;
     for (const endpoint of endpoints) {
         try {
-            const responseBody = await makeGetRequestWithRetries(endpoint, 3);
+            const responseBody = await makeGetRequestWithRetries(endpoint, 2);
             const json = JSON.parse(responseBody);
             const isDone = findIsDoneProperty(json);
             trueCount += isDone ? 1 : 0;
