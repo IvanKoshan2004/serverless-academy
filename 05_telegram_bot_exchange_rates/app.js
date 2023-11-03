@@ -10,79 +10,54 @@ const monobankExchangeService = new MonobankExchangeService(
 );
 const privatBankExchangeService = new PrivatBankExchangeService();
 
-const currencyButtons = [
-    { name: "USD", row: 0, pos: 0 },
-    { name: "EUR", row: 0, pos: 1 },
+const CURRENCY_BUTTONS = [
+    {
+        name: "USD",
+        row: 0,
+        pos: 0,
+        handler: function (chatId) {
+            sendCurrencyExchangeRate(chatId, this.name);
+        },
+    },
+    {
+        name: "EUR",
+        row: 0,
+        pos: 1,
+        handler: function (chatId) {
+            sendCurrencyExchangeRate(chatId, this.name);
+        },
+    },
 ];
-
-function promptOption(chatId) {
-    return bot.sendMessage(chatId, "Choose option:", {
-        reply_markup: {
-            keyboard: [["Exchange Rates"]],
-            resize_keyboard: true,
+const MENU_BUTTONS = [
+    {
+        name: "Exchange Rates",
+        row: 0,
+        col: 0,
+        handler: function (chatId) {
+            promptCurrency(chatId);
         },
-    });
-}
+    },
+];
+const COMMANDS = [{ command: "start", description: "starts the bot" }];
 
-function promptCurrency(chatId) {
-    return bot.sendMessage(chatId, "Choose currency:", {
-        reply_markup: {
-            keyboard: generateKeyboard(currencyButtons),
-            resize_keyboard: true,
-        },
-    });
-}
-
-async function sendCurrencyExchangeRate(chatId, currency) {
-    try {
-        const dataMessage = await bot.sendMessage(
-            chatId,
-            "Looking up the data..."
-        );
-        const monobankExchangeData =
-            await monobankExchangeService.getExchangeData(currency, "UAH");
-        const privatBankExchangeData =
-            await privatBankExchangeService.getExchangeData(currency, "UAH");
-
-        const responseMessage = `
-Monobank:
-Pair ${monobankExchangeData.key}
-
-Buy: ${monobankExchangeData.rateBuy} UAH
-Sell: ${monobankExchangeData.rateSell} UAH
-
-Last update at ${new Date(monobankExchangeData.date * 1000).toUTCString()}
-
-PrivatBank:
-Pair ${privatBankExchangeData.key}
-
-Buy: ${privatBankExchangeData.rateBuy} UAH
-Sell: ${privatBankExchangeData.rateSell} UAH
-
-Exchange rates loaded at ${new Date(
-            privatBankExchangeData.date * 1000
-        ).toUTCString()}
-`;
-        return bot.editMessageText(responseMessage, {
-            chat_id: chatId,
-            message_id: dataMessage.message_id,
-            parse_mode: "Markdown",
-        });
-    } catch (e) {
-        return bot.sendMessage(chatId, "Bot cannot process your request");
-    }
-}
-bot.setMyCommands([{ command: "start", description: "starts the bot" }]);
+bot.setMyCommands(COMMANDS);
 bot.on("message", async (message) => {
     if (message.text.startsWith("/start")) {
         promptOption(message.chat.id);
     }
-    if (message.text == "Exchange Rates") {
-        promptCurrency(message.chat.id);
+    const pressedMenuButton = MENU_BUTTONS.find(
+        (el) => el.name == message.text
+    );
+    if (pressedMenuButton) {
+        pressedMenuButton.handler(message.chat.id);
+        return;
     }
-    if (currencyButtons.find((el) => el.name == message.text)) {
-        const currency = currencyButtons.find((el) => el.name == message.text);
-        sendCurrencyExchangeRate(message.chat.id, currency.name);
+    const pressedCurrencyButton = CURRENCY_BUTTONS.find(
+        (el) => el.name == message.text
+    );
+    if (pressedCurrencyButton) {
+        pressedCurrencyButton.handler(message.chat.id);
+        return;
     }
 });
 console.log("Bot started");
