@@ -6,5 +6,5 @@ export type User = {
 export interface IUserModel {
     getUser(id: UserId): Promise<User | null>;
     registerUser(email: string, password: string): Promise<User>;
-    loginUser(email: string, password: string): Promise<boolean>;
+    loginUser(email: string, password: string): Promise<User>;
 }
