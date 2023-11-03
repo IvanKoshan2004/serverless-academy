@@ -4,12 +4,24 @@ import axios from "axios";
 
 const bot = new TelegramBot(config.botToken, { polling: true });
 
-const availableIntervals = ["3 hours", "6 hours"];
+const AVAILABLE_INTERVALS = {
+    threeHourInterval: {
+        name: "3 hours",
+    },
+    sixHourInterval: {
+        name: "6 hours",
+    },
+};
+
+const AVAILABLE_CITY = {
+    name: "Львів, Україна",
+    query: "lviv,ua",
+};
 
 function promptLocation(chatId) {
     return bot.sendMessage(chatId, "Choose location:", {
         reply_markup: {
-            keyboard: [["Forecast in Lviv"]],
+            keyboard: [[AVAILABLE_CITY.name]],
             resize_keyboard: true,
         },
     });
@@ -17,15 +29,27 @@ function promptLocation(chatId) {
 function promptInterval(chatId) {
     return bot.sendMessage(chatId, "Choose interval:", {
         reply_markup: {
-            keyboard: [...availableIntervals.map((el) => [el])],
+            keyboard: [...AVAILABLE_INTERVALS.map((el) => [el])],
             resize_keyboard: true,
         },
     });
 }
-async function getWeatherForecastData(interval) {
+
+function fillChars(obj, count, char = " ") {
+    if (char.length != 1) {
+        throw Error("Invalid fill char lenght");
+    }
+    const string = obj.toString();
+    if (string.length < count) {
+        return char.repeat(count - string.length) + string;
+    }
+    return string;
+}
+
+async function getWeatherForecastData() {
     //API sends data in intervals of 3 hours
     const request = await axios(
-        `https://api.openweathermap.org/data/2.5/forecast?q=lviv,ua&appid=${config.openWeatherAPIKey}&units=metric`
+        `https://api.openweathermap.org/data/2.5/forecast?q=${AVAILABLE_CITY.query}&appid=${config.openWeatherAPIKey}&units=metric`
     );
     let { city, list } = request.data;
     let timezoneUTC = (city.timezone / 3600).toFixed(2);
@@ -40,45 +64,39 @@ async function getWeatherForecastData(interval) {
         },
         humidity: el.main.humidity,
     }));
-    if (interval == "6 hours") {
-        dataPoints = dataPoints.filter((_, i) => i % 2 == 0);
-    }
     return {
         city: { ...city, timezoneUTC },
         dataPoints,
     };
 }
-function getDateKey(date) {
+function getDayKey(time) {
     const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    let dateDay = date.getDate();
-    dateDay = dateDay < 10 ? "0" + date.toString() : dateDay;
-    const dateKey = `${weekDays[date.getDay()]} ${dateDay}`;
-    return dateKey;
+    const day = fillChars(time.getDate().toString(), 2, "0");
+    const dayKey = `${weekDays[time.getDay()]} ${day}`;
+    return dayKey;
 }
 function groupDataPointsByDays(dataPoints) {
     const lines = [];
     const daysEntries = [];
     dataPoints.forEach((el) => {
-        const day = getDateKey(el.time);
-        if (!daysEntries.find((el) => el.day == day)) {
+        const dayKey = getDayKey(el.time);
+        if (!daysEntries.find((el) => el.day == dayKey)) {
             daysEntries.push({
-                day,
+                day: dayKey,
                 entries: [],
             });
         }
     });
-    for (const p of dataPoints) {
-        const d = p.time;
-        const dayKey = getDateKey(p.time);
-        let hour = d.getHours();
-        hour = hour < 10 ? "0" + hour.toString() : hour;
+    for (const dataPoint of dataPoints) {
+        const time = dataPoint.time;
+        const dayKey = getDayKey(time);
+        const hour = time.getHours();
         const entry = {
-            ...p,
-            time: hour,
+            ...dataPoint,
+            hour: hour,
         };
         daysEntries.find((el) => el.day == dayKey).entries.push(entry);
     }
-
     return daysEntries;
 }
 function formatDayEntriesIntoTable(entries) {
@@ -86,38 +104,40 @@ function formatDayEntriesIntoTable(entries) {
     const top = `|Hour|   Temp | Wind m/s | Humid % | Prec. % |`;
     const straightLine = "-".repeat(top.length);
     const lines = [straightLine, top, straightLine];
-    function fillSpaces(obj, count) {
-        const string = obj.toString();
-        if (string.length < count) {
-            return " ".repeat(count - string.length) + string;
-        }
-        return string;
-    }
     for (const e of entries) {
         lines.push(
-            `| ${fillSpaces(e.time, 2)} | ${fillSpaces(
-                e.temp,
-                6
-            )} | ${fillSpaces(e.wind, 8)} | ${fillSpaces(
-                e.humidity,
+            `| ${fillChars(e.hour, 2)} | ${fillChars(e.temp, 6)} | ${fillChars(
+                e.wind,
+                8
+            )} | ${fillChars(e.humidity, 7)} | ${fillChars(
+                e.precipitation.chance,
                 7
-            )} | ${fillSpaces(e.precipitation.chance, 7)} |`
+            )} |`
         );
     }
     lines.push(straightLine);
     return lines.join("\n");
 }
-async function sendWeatherForecast(chatId, interval) {
+function filterDataPoints(dataPoints, intervalName) {
+    switch (intervalName) {
+        case AVAILABLE_INTERVALS.sixHourInterval.name:
+            return dataPoints.filter((_, i) => {
+                return i % 2 == 0;
+            });
+        case AVAILABLE_INTERVALS.threeHourInterval.name:
+            return dataPoints;
+        default:
+            throw Error("Invalid interval");
+    }
+}
+async function sendWeatherForecast(chatId, intervalName) {
     try {
-        const { city, dataPoints } = await getWeatherForecastData(interval);
-        await bot.sendMessage(
-            chatId,
-            `Country: ${city.country}\nCity: ${city.name}\nTimezone ${city.timezoneUTC}\nShowing forecast with reference to city's timezone`
-        );
-        const dataPointsByDays = groupDataPointsByDays(dataPoints);
-        let currentDay = getDateKey(new Date());
+        const { city, dataPoints } = await getWeatherForecastData();
+        const filteredDataPoints = filterDataPoints(dataPoints, intervalName);
+        const dataPointsByDays = groupDataPointsByDays(filteredDataPoints);
+        let currentDayKey = getDayKey(new Date());
         const currentDayEntries = dataPointsByDays.find(
-            (el) => el.day == currentDay
+            (el) => el.day == currentDayKey
         ).entries;
         const text = formatDayEntriesIntoTable(currentDayEntries);
         const replyMarkUp = {
@@ -128,6 +148,10 @@ async function sendWeatherForecast(chatId, interval) {
                 })),
             ],
         };
+        await bot.sendMessage(
+            chatId,
+            `Country: ${city.country}\nCity: ${city.name}\nTimezone ${city.timezoneUTC}\nShowing forecast with reference to city's timezone`
+        );
         const forecastMessage = await bot.sendMessage(
             chatId,
             "<pre>" + text + "</pre>",
@@ -138,13 +162,13 @@ async function sendWeatherForecast(chatId, interval) {
         );
         bot.addListener("callback_query", (query) => {
             if (forecastMessage.message_id == query.message.message_id) {
-                if (query.data == currentDay) {
+                if (query.data == currentDayKey) {
                     return;
                 }
                 const currentDayEntries = dataPointsByDays.find(
                     (el) => el.day == query.data
                 ).entries;
-                currentDay = query.data;
+                currentDayKey = query.data;
                 const text = formatDayEntriesIntoTable(currentDayEntries);
                 return bot.editMessageText("<pre>" + text + "</pre>", {
                     chat_id: forecastMessage.chat.id,
@@ -168,12 +192,16 @@ bot.on("message", async (message) => {
     if (message.text.startsWith("/start")) {
         promptLocation(message.chat.id);
     }
-    if (message.text == "Forecast in Lviv") {
+    if (message.text == AVAILABLE_CITY.name) {
         promptInterval(message.chat.id);
     }
-    if (availableIntervals.find((el) => el == message.text)) {
-        const interval = availableIntervals.find((el) => el == message.text);
-        sendWeatherForecast(message.chat.id, interval);
+    if (
+        Object.values(AVAILABLE_INTERVALS).find((el) => el.name == message.text)
+    ) {
+        const intervalName = Object.values(AVAILABLE_INTERVALS).find(
+            (el) => el.name == message.text
+        ).name;
+        sendWeatherForecast(message.chat.id, intervalName);
     }
 });
 
