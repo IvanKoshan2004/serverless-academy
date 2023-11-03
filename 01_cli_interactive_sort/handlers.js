@@ -1,4 +1,4 @@
-const floatAndIntRegEx = /^[0-9]+\.?[0-9]+$/; // regex matches floats and integers
+const floatAndIntRegEx = /^-?[0-9]+(\.[0-9]+)?$/; // regex matches floats and integers
 
 function compareStringsAlphabetically(a, b) {
     const minLength = Math.min(a.length, b.length);
