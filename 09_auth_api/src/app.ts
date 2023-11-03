@@ -1,6 +1,9 @@
 import express from "express";
 import authRouter from "./routers/auth.router";
 import meRouter from "./routers/me.router";
+import { parseEnv } from "./parse-env";
+
+parseEnv("../.env");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
