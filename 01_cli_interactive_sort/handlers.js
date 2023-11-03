@@ -1,4 +1,4 @@
-const floatRegEx = /^[0-9]+\.?[0-9]+$/; // regex matches floats and integers
+const floatAndIntRegEx = /^[0-9]+\.?[0-9]+$/; // regex matches floats and integers
 
 function compareStringsAlphabetically(a, b) {
     const minLength = Math.min(a.length, b.length);
@@ -22,45 +22,53 @@ function compareStringsAlphabetically(a, b) {
     return a.length - b.length;
 }
 
-export const handlers = [
+export const LIST_HANDLERS = [
     {
+        command: "1",
         description: "Sort words alphabetically",
         handler: (wordsAndNumbers) =>
             wordsAndNumbers
-                .filter((el) => !floatRegEx.test(el))
+                .filter((el) => !floatAndIntRegEx.test(el))
                 .sort(compareStringsAlphabetically),
     },
     {
+        command: "2",
         description: "Show numbers from lesser to greater",
         handler: (wordsAndNumbers) =>
             wordsAndNumbers
-                .filter((el) => floatRegEx.test(el))
+                .filter((el) => floatAndIntRegEx.test(el))
                 .map((el) => parseFloat(el))
                 .sort((a, b) => a - b),
     },
     {
+        command: "3",
         description: "Show numbers from bigger to smaller",
         handler: (wordsAndNumbers) =>
             wordsAndNumbers
-                .filter((el) => floatRegEx.test(el))
+                .filter((el) => floatAndIntRegEx.test(el))
                 .map((el) => parseFloat(el))
                 .sort((a, b) => b - a),
     },
     {
+        command: "4",
         description:
             "Display words in ascending order by number of letters in the word",
         handler: (wordsAndNumbers) =>
             wordsAndNumbers
-                .filter((el) => !floatRegEx.test(el))
+                .filter((el) => !floatAndIntRegEx.test(el))
                 .sort((a, b) => a.length - b.length),
     },
     {
+        command: "5",
         description: "Show only unique words",
         handler: (wordsAndNumbers) => [
-            ...new Set(wordsAndNumbers.filter((el) => !floatRegEx.test(el))),
+            ...new Set(
+                wordsAndNumbers.filter((el) => !floatAndIntRegEx.test(el))
+            ),
         ],
     },
     {
+        command: "6",
         description: "Show only unique words and numbers",
         handler: (wordsAndNumbers) => [...new Set(wordsAndNumbers)],
     },

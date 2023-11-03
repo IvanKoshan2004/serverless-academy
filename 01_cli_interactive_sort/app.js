@@ -1,5 +1,5 @@
 import { createInterface } from "readline";
-import { handlers } from "./handlers.js";
+import { LIST_HANDLERS } from "./handlers.js";
 const readline = createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -17,7 +17,7 @@ function getInput(prompt) {
     });
 }
 
-async function getUserWords() {
+async function getUserWordsAndNumbers() {
     const userInput = await getInput(
         "Hello. Enter 10 words or numbers dividing them with a space: "
     );
@@ -31,35 +31,34 @@ async function getUserWords() {
     const wordsAndNumbers = userInput.split(" ").filter((el) => el !== "");
     return wordsAndNumbers;
 }
+const EXIT_COMMAND = "exit";
 
 function printMenuOptions(handlers) {
-    handlers
-        .map((handler) => handler.description)
-        .forEach((line, i) => console.log(`${i + 1}. ${line}`));
+    handlers.forEach((handler) =>
+        console.log(`${handler.command}. ${handler.description}`)
+    );
+    console.log(`${EXIT_COMMAND}. Exit the program`);
 }
 
 async function main() {
-    let isRunning = true;
-    while (isRunning) {
-        printMenuOptions(handlers);
-        const wordsAndNumbers = await getUserWords();
+    while (true) {
+        printMenuOptions(LIST_HANDLERS);
+        const wordsAndNumbersList = await getUserWordsAndNumbers();
         const command = await getInput(
-            `Select (1 - ${handlers.length}) and press ENTER: `
+            `Select command number and press ENTER: `
         );
-        const handlerIndex = /^[0-9]+$/.test(command)
-            ? parseInt(command) - 1
-            : -1;
-        if (handlerIndex < handlers.length && handlerIndex >= 0) {
-            const selectedHandler = handlers[handlerIndex].handler;
-            console.log(selectedHandler(wordsAndNumbers));
+        const selectedListHandler = LIST_HANDLERS.find(
+            (handler) => handler.command == command
+        );
+        if (selectedListHandler) {
+            const result = selectedListHandler(wordsAndNumbersList);
+            console.log(result);
             continue;
         }
-        if (command == "exit") {
+        if (command == EXIT_COMMAND) {
             readline.close();
-            isRunning = false;
             break;
         }
-
         console.log("Invalid command");
     }
 }
