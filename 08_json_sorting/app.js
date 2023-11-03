@@ -1,5 +1,5 @@
 import https from "https";
-const endpoints = [
+const ENDPOINTS = [
     "https://jsonbase.com/sls-team/json-793",
     "https://jsonbase.com/sls-team/json-955",
     "https://jsonbase.com/sls-team/json-231",
@@ -68,7 +68,7 @@ function findIsDoneProperty(json) {
 async function main() {
     let trueCount = 0;
     let falseCount = 0;
-    for (const endpoint of endpoints) {
+    for (const endpoint of ENDPOINTS) {
         try {
             const responseBody = await makeGetRequestWithRetries(endpoint, 2);
             const json = JSON.parse(responseBody);
