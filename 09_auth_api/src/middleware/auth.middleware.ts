@@ -1,9 +1,8 @@
-import { NextFunction, Request, Response } from "express";
+import { NextFunction, Request, RequestHandler, Response } from "express";
+import { IUserModel } from "../db/interfaces/user-model.interface";
 
-export function authenticateUserMiddleware(
-    req: Request,
-    res: Response,
-    next: NextFunction
-) {
-    next();
+export function createAuthenticateUserMiddleware(userModel: IUserModel) {
+    return (req: Request, res: Response, next: NextFunction) => {
+        next();
+    };
 }
