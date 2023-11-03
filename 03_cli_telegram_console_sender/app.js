@@ -9,8 +9,10 @@ import {
 } from "./telegram.js";
 const require = createRequire(import.meta.url);
 const packageInfo = require("./package.json");
-const botTokenPath = new URL(`./bot_token.txt`, import.meta.url);
-const userIdPath = new URL(`./user_id.txt`, import.meta.url);
+const BOT_TOKEN_FILE_NAME = "bot_token.txt";
+const USER_ID_FILE_NAME = "user_id.txt";
+const botTokenPath = new URL(`./${BOT_TOKEN_FILE_NAME}`, import.meta.url);
+const userIdPath = new URL(`./${USER_ID_FILE_NAME}`, import.meta.url);
 
 async function readConfig() {
     let botToken, userId;
@@ -21,7 +23,7 @@ async function readConfig() {
     }
     if (!botToken) {
         console.log(
-            "Bot token is not installed.\nPlease paste your bot token into file bot_token.txt that was generated in the folder"
+            `Bot token is not installed.\nPlease paste your bot token into file ${BOT_TOKEN_FILE_NAME} that was generated in the folder`
         );
         process.exit(1);
     }
