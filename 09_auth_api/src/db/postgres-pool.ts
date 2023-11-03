@@ -1,4 +1,7 @@
 import { Pool } from "pg";
+import { parseEnv } from "../parse-env";
+
+parseEnv(".env");
 
 const pgPool = new Pool({
     host: process.env.DB_HOST,

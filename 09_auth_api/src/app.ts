@@ -5,7 +5,7 @@ import { parseEnv } from "./parse-env";
 import pgPool from "./db/postgres-pool";
 import { PgUserModel } from "./db/models/pg-user.model";
 
-parseEnv("../.env");
+parseEnv(".env");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
