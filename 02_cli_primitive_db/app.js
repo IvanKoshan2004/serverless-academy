@@ -45,9 +45,8 @@ const searchQuestions = [
     },
 ];
 async function main() {
-    let isRunning = true;
     const db = new DBStorage("user_database");
-    while (isRunning) {
+    while (true) {
         const answers = await inquirer.prompt(addUserQuestions);
         if (answers.user == "") {
             const confirmSearch = await inquirer.prompt(confirmSearchQuestion);
@@ -66,11 +65,15 @@ async function main() {
                 console.log("Found users:");
                 console.log(searchResults);
             } else {
-                isRunning = false;
+                break;
             }
             continue;
         }
-        await db.write(answers);
+        try {
+            await db.write(answers);
+        } catch (e) {
+            console.log("Failed to write to database");
+        }
     }
 }
 main();
