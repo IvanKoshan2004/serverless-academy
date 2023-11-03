@@ -73,8 +73,8 @@ async function main() {
             const responseBody = await makeGetRequestWithRetries(endpoint, 2);
             const json = JSON.parse(responseBody);
             const isDone = findIsDoneProperty(json);
-            trueCount += isDone ? 1 : 0;
-            falseCount += !isDone ? 1 : 0;
+            trueCount += isDone === true ? 1 : 0;
+            falseCount += isDone === false ? 1 : 0;
             console.log(`[SUCCESS] ${endpoint}: isDone: ${isDone}`);
         } catch (e) {
             console.log(`[FAIL] ${endpoint}: The endpoint is unavailable`);
