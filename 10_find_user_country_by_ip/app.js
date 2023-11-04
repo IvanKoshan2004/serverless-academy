@@ -1,9 +1,11 @@
 import express from "express";
 
 const app = express();
+app.set("trust proxy", true);
+
 const PORT = process.env.PORT || 3000;
 app.get("", (req, res) => {
-    const userIp = "192.168.0.101";
+    const userIp = req.ip;
     const userCountry = "country";
     const ipRangeStart = "0.0.0.0";
     const ipRangeEnd = "255.255.255.255";
