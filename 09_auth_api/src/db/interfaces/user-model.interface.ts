@@ -9,7 +9,6 @@ export type UserCredentials = {
     refreshToken: string;
 };
 export interface IUserModel {
-    getUser(id: UserId): Promise<User | null>;
     registerUser(email: string, password: string): Promise<UserCredentials>;
     loginUser(email: string, password: string): Promise<UserCredentials>;
     verifyAccessJwt(accessToken: string): Promise<User | null>;

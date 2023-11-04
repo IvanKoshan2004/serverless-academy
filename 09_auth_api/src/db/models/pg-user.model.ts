@@ -19,15 +19,6 @@ export class PgUserModel implements IUserModel {
             accessTokenTTLSeconds: number;
         }
     ) {}
-    async getUser(id: number): Promise<User | null> {
-        const client = await this.pool.connect();
-        const queryResult = client.query("SELECT * FROM users WHERE id = $1", [
-            id,
-        ]);
-        console.log(queryResult);
-        client.release();
-        return null;
-    }
     async registerUser(
         email: string,
         password: string
