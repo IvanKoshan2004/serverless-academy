@@ -78,25 +78,63 @@ export class PgUserModel implements IUserModel {
             throw new UnauthorizedError("User not authorized");
         }
         client.release();
-        const accessToken = sign(user, this.jwtOptions.jwtSecret, {
-            expiresIn: this.jwtOptions.accessTokenTTLSeconds,
-        });
-        const refreshToken = sign(user, this.jwtOptions.jwtSecret);
+        const accessToken = sign(
+            { ...user, access: true },
+            this.jwtOptions.jwtSecret,
+            {
+                expiresIn: this.jwtOptions.accessTokenTTLSeconds,
+            }
+        );
+        const refreshToken = sign(
+            { ...user, refresh: true },
+            this.jwtOptions.jwtSecret
+        );
         return {
             id: user.id,
             accessToken: accessToken,
             refreshToken: refreshToken,
         };
     }
-    async verifyJwt(token: string): Promise<User | null> {
+    async verifyAccessJwt(accessToken: string): Promise<User | null> {
         try {
-            const user = verify(token, this.jwtOptions.jwtSecret) as User;
+            const jwtPayload = verify(
+                accessToken,
+                this.jwtOptions.jwtSecret
+            ) as User & { access: boolean };
+            if (!jwtPayload.access) {
+                throw Error();
+            }
             return {
-                id: user.id,
-                email: user.email,
+                id: jwtPayload.id,
+                email: jwtPayload.email,
             };
         } catch (e) {
             return null;
+        }
+    }
+    async refreshJwt(refreshToken: string): Promise<UserCredentials> {
+        try {
+            const jwtPayload = verify(
+                refreshToken,
+                this.jwtOptions.jwtSecret
+            ) as User & { refresh: boolean };
+            if (!jwtPayload.refresh) {
+                throw Error();
+            }
+            const accessToken = sign(
+                { id: jwtPayload.id, email: jwtPayload.email, access: true },
+                this.jwtOptions.jwtSecret,
+                {
+                    expiresIn: this.jwtOptions.accessTokenTTLSeconds,
+                }
+            );
+            return {
+                id: jwtPayload.id,
+                accessToken: accessToken,
+                refreshToken: refreshToken,
+            };
+        } catch (e) {
+            throw new UnauthorizedError("Invalid refresh token");
         }
     }
 }

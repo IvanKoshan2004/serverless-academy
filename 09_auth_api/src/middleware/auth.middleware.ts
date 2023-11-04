@@ -16,9 +16,9 @@ export function createAuthenticateUserMiddleware(userModel: IUserModel) {
             return;
         }
         const token = extractToken(authHeader);
-        const user = await userModel.verifyJwt(token);
+        const user = await userModel.verifyAccessJwt(token);
         if (user === null) {
-            res.send({ status: false, error: "Invalid token" });
+            res.send({ status: false, error: "Invalid access token" });
             return;
         }
         req.user = user;
