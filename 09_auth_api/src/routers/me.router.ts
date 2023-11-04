@@ -8,7 +8,7 @@ export function createMeRouter(userModel: IUserModel): Router {
     router.get(
         "",
         createAuthenticateUserMiddleware(userModel),
-        createGetMeController(userModel)
+        createGetMeController()
     );
     return router;
 }

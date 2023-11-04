@@ -1,8 +1,14 @@
 import { Request, Response } from "express";
-import { IUserModel } from "../../db/interfaces/user-model.interface";
-
-export function createGetMeController(userModel: IUserModel) {
+export function createGetMeController() {
     return (req: Request, res: Response) => {
-        res.end("me");
+        const { id, email } = req.user!;
+        res.status(200);
+        res.send({
+            status: true,
+            data: {
+                id: id,
+                email: email,
+            },
+        });
     };
 }
