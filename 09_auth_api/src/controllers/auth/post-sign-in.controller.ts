@@ -7,15 +7,11 @@ export function createPostSignInController(userModel: IUserModel) {
     return async (req: Request, res: Response) => {
         const { email, password } = req.body;
         try {
-            const user = await userModel.loginUser(email, password);
+            const userCredentials = await userModel.loginUser(email, password);
             res.status(200);
             res.send({
                 status: true,
-                data: {
-                    id: user.id,
-                    accessToken: "string",
-                    refreshToken: "string",
-                },
+                data: userCredentials,
             });
         } catch (e: any) {
             if (e.name == UnauthorizedError.name) {

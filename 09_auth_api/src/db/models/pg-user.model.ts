@@ -1,13 +1,24 @@
 import { Pool } from "pg";
-import { IUserModel, User } from "../interfaces/user-model.interface";
+import {
+    IUserModel,
+    User,
+    UserCredentials,
+} from "../interfaces/user-model.interface";
 import { UniqueColumnError } from "../../lib/errors/unique-column.error";
 import { compare, hash } from "bcrypt";
 import { UnauthorizedError } from "../../lib/errors/unauthorized.error";
 import { EntityNotFoundError } from "../../lib/errors/entity-not-found.error";
+import { sign } from "jsonwebtoken";
 
 export class PgUserModel implements IUserModel {
     private SALT_ROUNDS = 10;
-    constructor(private pool: Pool) {}
+    constructor(
+        private pool: Pool,
+        private jwtOptions: {
+            jwtSecret: string;
+            accessTokenTTLSeconds: number;
+        }
+    ) {}
     async getUser(id: number): Promise<User | null> {
         const client = await this.pool.connect();
         const queryResult = client.query("SELECT * FROM users WHERE id = $1", [
@@ -17,7 +28,10 @@ export class PgUserModel implements IUserModel {
         client.release();
         return null;
     }
-    async registerUser(email: string, password: string): Promise<User> {
+    async registerUser(
+        email: string,
+        password: string
+    ): Promise<UserCredentials> {
         const client = await this.pool.connect();
         const userExistsQuery = await client.query(
             "SELECT id, email FROM users WHERE email = $1",
@@ -40,12 +54,17 @@ export class PgUserModel implements IUserModel {
         }
         const user = getUserQuery.rows[0];
         client.release();
+        const accessToken = sign(user, this.jwtOptions.jwtSecret, {
+            expiresIn: this.jwtOptions.accessTokenTTLSeconds,
+        });
+        const refreshToken = sign(user, this.jwtOptions.jwtSecret);
         return {
             id: user.id,
-            email: user.email,
+            accessToken: accessToken,
+            refreshToken: refreshToken,
         };
     }
-    async loginUser(email: string, password: string): Promise<User> {
+    async loginUser(email: string, password: string): Promise<UserCredentials> {
         const client = await this.pool.connect();
         const userQuery = await client.query(
             "SELECT * FROM users WHERE email = $1",
@@ -59,9 +78,14 @@ export class PgUserModel implements IUserModel {
             throw new UnauthorizedError("User not authorized");
         }
         client.release();
+        const accessToken = sign(user, this.jwtOptions.jwtSecret, {
+            expiresIn: this.jwtOptions.accessTokenTTLSeconds,
+        });
+        const refreshToken = sign(user, this.jwtOptions.jwtSecret);
         return {
             id: user.id,
-            email: user.email,
+            accessToken: accessToken,
+            refreshToken: refreshToken,
         };
     }
 }

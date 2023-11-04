@@ -20,15 +20,14 @@ export function createPostSignUpController(userModel: IUserModel) {
             return;
         }
         try {
-            const user = await userModel.registerUser(email, password);
+            const userCredentials = await userModel.registerUser(
+                email,
+                password
+            );
             res.status(201);
             res.send({
                 status: true,
-                data: {
-                    id: user.id,
-                    accessToken: "string",
-                    refreshToken: "string",
-                },
+                data: userCredentials,
             });
         } catch (e: any) {
             if (e.name == UniqueColumnError.name) {

@@ -9,7 +9,11 @@ parseEnv(".env");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const userModel = new PgUserModel(pgPool);
+
+const userModel = new PgUserModel(pgPool, {
+    jwtSecret: process.env.JWT_SECRET!,
+    accessTokenTTLSeconds: parseInt(process.env.JWT_ACCESS_TOKEN_TTL_SECONDS!),
+});
 
 app.use(express.json());
 app.use("/auth", createAuthRouter(userModel));
