@@ -12,4 +12,5 @@ export interface IUserModel {
     getUser(id: UserId): Promise<User | null>;
     registerUser(email: string, password: string): Promise<UserCredentials>;
     loginUser(email: string, password: string): Promise<UserCredentials>;
+    verifyJwt(token: string): Promise<User | null>;
 }

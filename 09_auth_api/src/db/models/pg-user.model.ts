@@ -8,7 +8,7 @@ import { UniqueColumnError } from "../../lib/errors/unique-column.error";
 import { compare, hash } from "bcrypt";
 import { UnauthorizedError } from "../../lib/errors/unauthorized.error";
 import { EntityNotFoundError } from "../../lib/errors/entity-not-found.error";
-import { sign } from "jsonwebtoken";
+import { sign, verify } from "jsonwebtoken";
 
 export class PgUserModel implements IUserModel {
     private SALT_ROUNDS = 10;
@@ -87,5 +87,16 @@ export class PgUserModel implements IUserModel {
             accessToken: accessToken,
             refreshToken: refreshToken,
         };
+    }
+    async verifyJwt(token: string): Promise<User | null> {
+        try {
+            const user = verify(token, this.jwtOptions.jwtSecret) as User;
+            return {
+                id: user.id,
+                email: user.email,
+            };
+        } catch (e) {
+            return null;
+        }
     }
 }
