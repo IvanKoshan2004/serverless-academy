@@ -2,12 +2,20 @@ import { Request, Response } from "express";
 import { IUserModel } from "../../db/interfaces/user-model.interface";
 import { UnauthorizedError } from "../../lib/errors/unauthorized.error";
 import { EntityNotFoundError } from "../../lib/errors/entity-not-found.error";
+import { extractBearerToken } from "../../lib/extract-bearer-token";
 
 export function createPostSignInController(userModel: IUserModel) {
     return async (req: Request, res: Response) => {
-        const { email, password } = req.body;
         try {
-            const userCredentials = await userModel.loginUser(email, password);
+            const authHeader = req.headers["authorization"];
+            let userCredentials;
+            if (authHeader !== undefined) {
+                const refreshToken = extractBearerToken(authHeader);
+                userCredentials = await userModel.refreshJwt(refreshToken);
+            } else {
+                const { email, password } = req.body;
+                userCredentials = await userModel.loginUser(email, password);
+            }
             res.status(200);
             res.send({
                 status: true,
