@@ -111,6 +111,9 @@ export class DBCore {
         );
         return readBytesBuffer.toString(this.#encoding);
     }
+    keyExists(key) {
+        return this.#index.get(key) !== undefined;
+    }
     #addKeyToIndex(key, filePointer, valueStart, valueEnd) {
         this.#index.set(key, {
             filePointer: filePointer,

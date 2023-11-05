@@ -25,6 +25,9 @@ app.use(async (ctx) => {
                 if (!key) {
                     ctx.throw(400, "Set key query param to get the json");
                 }
+                if (!db.keyExists(key)) {
+                    ctx.throw(404, "No json with such key");
+                }
                 try {
                     const value = await db.get(key);
                     ctx.set("Content-Type", "application/json");
