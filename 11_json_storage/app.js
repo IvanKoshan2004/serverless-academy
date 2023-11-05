@@ -1,8 +1,18 @@
 import Koa from "koa";
+import { resolve } from "path";
+import { fileURLToPath } from "url";
+import { DBCore } from "./key-value-db.js";
 
-const app = new Koa();
 const PORT = process.env.PORT || 3000;
 const JSON_ROUTE = "/json";
+const DB_FOLDER_NAME = "db_data";
+
+const __dirname = fileURLToPath(new URL(".", import.meta.url));
+const dbFolderPath = resolve(__dirname, DB_FOLDER_NAME);
+
+const app = new Koa();
+const db = new DBCore(dbFolderPath);
+await db.initDb();
 
 app.use((ctx) => {
     if (ctx.path == JSON_ROUTE) {
