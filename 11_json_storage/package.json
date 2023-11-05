@@ -1,0 +1,13 @@
+{
+    "name": "11_json_storage",
+    "version": "1.0.0",
+    "description": "",
+    "main": "app.js",
+    "type": "module",
+    "scripts": {},
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "koa": "^2.14.2"
+    }
+}
