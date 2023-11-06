@@ -32,9 +32,11 @@ export class ShortlinkService {
     }
     async createShortLink(link) {
         if (!this.initialized) throw Error("Shortlink Service not initialized");
+        const href = this.#getValidHref(link);
+        if (href === null) throw Error("Bad url format");
         const createResult = await this.#connection.execute(
             "INSERT into links (link) values (?)",
-            [link]
+            [href]
         );
         const insertId = createResult[0].insertId;
         const tag = this.#createTagFromNumber(insertId);
@@ -73,6 +75,13 @@ export class ShortlinkService {
         }
         const buffer = Buffer.from(bytes.reverse());
         return buffer.toString("base64url");
+    }
+    #getValidHref(link) {
+        try {
+            return new URL(link).href;
+        } catch (e) {
+            return null;
+        }
     }
     get maxStoreBytes() {
         return this.#maxStoreBytes;
