@@ -1,4 +1,6 @@
 import mysql from "mysql2/promise";
+import { InvalidLinkError } from "./errors/invalid-link.error.js";
+import { LinkNotFoundError } from "./errors/link-not-found.error.js";
 
 export class ShortlinkService {
     #connection;
@@ -33,7 +35,7 @@ export class ShortlinkService {
     async createShortLink(link) {
         if (!this.initialized) throw Error("Shortlink Service not initialized");
         const href = this.#getValidHref(link);
-        if (href === null) throw Error("Bad url format");
+        if (href === null) throw new InvalidLinkError("Bad url format");
         const createResult = await this.#connection.execute(
             "INSERT into links (link) values (?)",
             [href]
@@ -54,7 +56,7 @@ export class ShortlinkService {
         );
         const rows = result[0];
         if (rows.length == 0) {
-            throw Error("Link not found");
+            throw new LinkNotFoundError("Link not found");
         }
         return rows[rows.length - 1].link;
     }
